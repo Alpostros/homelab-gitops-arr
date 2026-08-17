@@ -1,0 +1,27 @@
+# storage — shared media PVs + RWX PVCs (no workload, so adoption can't restart anything).
+# Zero-diff verified (kubectl -n arr diff, exit 0). Early sync-wave so it precedes the apps that
+# mount these claims (bazarr, arr-stack) on a fresh rebuild.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: storage
+  namespace: argocd
+  annotations:
+    argocd.argoproj.io/sync-wave: "-2"
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: arr
+  source:
+    repoURL: git@github.com:Alpostros/homelab-gitops-arr.git
+    targetRevision: main
+    path: helm/storage
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: arr
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

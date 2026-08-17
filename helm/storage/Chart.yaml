@@ -1,0 +1,8 @@
+apiVersion: v2
+name: storage
+description: >-
+  Shared media storage for the arr cluster — the 3 static hostPath PVs (onto the Proxmox
+  virtiofs mounts) and their RWX PVCs, used by BOTH arr-stack and bazarr. Kept in one app so
+  the shared claims live in exactly one place; each app's own config PVC stays in that app's chart.
+type: application
+version: 0.1.0

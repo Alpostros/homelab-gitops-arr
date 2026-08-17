@@ -1,0 +1,7 @@
+apiVersion: v2
+name: bazarr
+description: >-
+  Bazarr (subtitles) for the arr cluster — reproduces the live Deployment/Service/config-PVC for
+  zero-diff adoption. Mounts the shared plex-movies / plex-tv PVCs (declared in the `storage` app).
+type: application
+version: 0.1.0

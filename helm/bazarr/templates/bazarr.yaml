@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bazarr
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bazarr
+  template:
+    metadata:
+      labels:
+        app: bazarr
+    spec:
+      containers:
+        - name: bazarr
+          image: "{{ .Values.image }}"
+          env:
+            - name: PUID
+              value: "1000"
+            - name: PGID
+              value: "1000"
+            - name: TZ
+              value: Europe/Amsterdam
+          ports:
+            - containerPort: 6767
+          volumeMounts:
+            - name: bazarr-config
+              mountPath: /config
+            - name: plex-movies
+              mountPath: /movies
+            - name: plex-tv
+              mountPath: /tv
+      volumes:
+        - name: bazarr-config
+          persistentVolumeClaim:
+            claimName: pvc-bazarr-config
+        - name: plex-movies
+          persistentVolumeClaim:
+            claimName: pvc-plex-movies      # from the `storage` app
+        - name: plex-tv
+          persistentVolumeClaim:
+            claimName: pvc-plex-tv          # from the `storage` app
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bazarr
+spec:
+  type: NodePort
+  selector:
+    app: bazarr
+  ports:
+    - port: 6767
+      targetPort: 6767
+      nodePort: 6767
+---
+# bazarr's own config PVC (local-path, dynamically provisioned). Its DATA is not backed up
+# (accepted gap) — only the claim is declared so a rebuild re-provisions it.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-bazarr-config
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 1Gi

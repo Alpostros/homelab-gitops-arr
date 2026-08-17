@@ -1,0 +1,40 @@
+# Shared RWX claims, statically bound to the PVs above (storageClassName "" + explicit volumeName).
+# Namespace comes from the Application destination (arr).
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-nas-downloads
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Ti
+  storageClassName: ""
+  volumeName: pv-nas-downloads
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-plex-movies
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Ti
+  storageClassName: ""
+  volumeName: pv-plex-movies
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-plex-tv
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Ti
+  storageClassName: ""
+  volumeName: pv-plex-tv

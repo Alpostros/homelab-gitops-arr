@@ -1,0 +1,2 @@
+# Kept at :latest to match live for zero-diff adoption; pin in Phase 7.
+image: lscr.io/linuxserver/bazarr:latest

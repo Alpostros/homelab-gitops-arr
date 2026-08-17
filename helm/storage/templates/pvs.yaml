@@ -1,0 +1,41 @@
+# Static hostPath PVs onto the Proxmox virtiofs mounts. Retain — never auto-delete the media.
+# These are cluster-scoped (no namespace). On a rebuild the hostPaths must already be mounted
+# on the node (virtiofs, host-side) — see hosts/proxmox.md / hosts/arr-vm.md.
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-nas-downloads
+spec:
+  accessModes:
+    - ReadWriteMany
+  capacity:
+    storage: 10Ti
+  hostPath:
+    path: /mnt/nas/downloads
+  persistentVolumeReclaimPolicy: Retain
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-plex-movies
+spec:
+  accessModes:
+    - ReadWriteMany
+  capacity:
+    storage: 10Ti
+  hostPath:
+    path: /mnt/localmedia/movies
+  persistentVolumeReclaimPolicy: Retain
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-plex-tv
+spec:
+  accessModes:
+    - ReadWriteMany
+  capacity:
+    storage: 10Ti
+  hostPath:
+    path: /mnt/nas/tv
+  persistentVolumeReclaimPolicy: Retain
