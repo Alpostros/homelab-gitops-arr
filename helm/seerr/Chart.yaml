@@ -1,0 +1,8 @@
+apiVersion: v2
+name: seerr
+description: >-
+  Seerr (media requests) for the arr cluster — PUBLIC (internet → Cloudflare → oracle-gateway →
+  tailnet → :5055). Reproduces the live Deployment/Service/config-PVC field-for-field (incl. the
+  pod-template restartedAt annotation) for a zero-diff, no-restart adoption.
+type: application
+version: 0.1.0

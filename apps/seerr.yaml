@@ -1,0 +1,22 @@
+# seerr — PUBLIC (internet → Cloudflare → oracle-gateway → tailnet → :5055). Zero-diff verified
+# (kubectl -n arr diff exit 0 → no restart), but kept MANUAL for the first sync so the public
+# service is adopted under a deliberate, watched trigger. Flip to automated once confirmed up.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: seerr
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: arr
+  source:
+    repoURL: git@github.com:Alpostros/homelab-gitops-arr.git
+    targetRevision: main
+    path: helm/seerr
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: arr
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
