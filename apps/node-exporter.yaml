@@ -1,0 +1,23 @@
+# node-exporter — first Phase-4 adoption (lowest blast radius: no secrets, no PVC, and a
+# restart would only blip metrics scraping, never a user). MANUAL SYNC (no `automated` block)
+# so it adopts only on an explicit, reviewed sync; flip to automated once Synced/Healthy.
+# Verified zero-diff vs the live DaemonSet (kubectl server-side diff, exit 0) before first sync.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: node-exporter
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: arr
+  source:
+    repoURL: git@github.com:Alpostros/homelab-gitops-arr.git
+    targetRevision: main
+    path: helm/node-exporter
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

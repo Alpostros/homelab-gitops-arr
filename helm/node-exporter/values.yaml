@@ -1,0 +1,5 @@
+# Kept at :latest to match the live DaemonSet so adoption is a zero-diff (no pod churn).
+# Pin to a digest in Phase 7 — that is a deliberate, controlled restart, not an adoption.
+image:
+  repository: prom/node-exporter
+  tag: latest

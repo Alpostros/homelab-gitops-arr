@@ -1,0 +1,9 @@
+apiVersion: v2
+name: node-exporter
+description: >-
+  Prometheus node-exporter DaemonSet for the arr cluster — scraped by cerberus's
+  Prometheus as job `k3s-node` (192.168.30.254:9100). Hand-rolled (not the upstream
+  prometheus-node-exporter chart) so it reproduces the live DaemonSet EXACTLY and
+  adopts with a zero diff.
+type: application
+version: 0.1.0
