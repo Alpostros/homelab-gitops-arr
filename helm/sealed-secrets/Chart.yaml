@@ -1,0 +1,9 @@
+apiVersion: v2
+name: sealed-secrets
+description: Umbrella chart wrapping the upstream Sealed Secrets controller (arr cluster).
+type: application
+version: 0.1.0
+dependencies:
+  - name: sealed-secrets
+    version: 2.19.1
+    repository: https://bitnami.github.io/sealed-secrets

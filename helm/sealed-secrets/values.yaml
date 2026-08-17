@@ -1,0 +1,7 @@
+# Values for the upstream chart — nested under the dependency name (`sealed-secrets`).
+# Default controller name/namespace so `kubeseal` works with no extra flags.
+# NOTE: arr's controller generates its OWN master keypair, distinct from cerberus's —
+# a SealedSecret sealed for one cluster is undecryptable on the other. Back arr's key
+# up to 1Password right after first sync (see the plan, Phase 3).
+sealed-secrets:
+  fullnameOverride: sealed-secrets-controller

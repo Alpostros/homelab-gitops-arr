@@ -1,4 +1,0 @@
-# Placeholder so the apps/ directory (the root App-of-Apps watches this path) exists
-# in git while empty. Child Applications land here from Phase 3 on, in this order:
-#   sealed-secrets → node-exporter → headlamp-rbac → ai → bazarr → seerr → arr-stack
-# Each is a thin apps/<app>.yaml → helm/<app>. Remove this file once the first app lands.
