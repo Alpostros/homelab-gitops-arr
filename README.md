@@ -66,7 +66,7 @@ chart (the chart has no `server.enabled` toggle):
 ```bash
 kubectl --context arr-lan create namespace argocd
 kubectl --context arr-lan apply -n argocd --server-side --force-conflicts \
-  -f https://raw.githubusercontent.com/argoproj/argo-cd/<PINNED_VERSION>/manifests/core-install.yaml
+  -f https://raw.githubusercontent.com/argoproj/argo-cd/v3.5.1/manifests/core-install.yaml
 ```
 
 Then connect this **private** repo (read-only deploy key → `repo-*` Secret in `argocd`), and apply
