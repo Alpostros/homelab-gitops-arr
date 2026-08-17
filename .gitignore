@@ -1,0 +1,5 @@
+.DS_Store
+*.tmp
+*.local.yaml
+# never commit raw secrets — only SealedSecrets belong in git
+*secret*.plain.yaml

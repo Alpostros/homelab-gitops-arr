@@ -1,0 +1,31 @@
+# App-of-Apps root for the arr cluster. Apply once on the arr VM (Phase 2), AFTER the
+# AppProject and after ArgoCD Core + the read-only deploy key are in place:
+#   kubectl --context arr-lan apply -n argocd -f bootstrap/root-app.yaml
+# It makes arr's ArgoCD watch apps/ and manage each child Application declaratively.
+#
+# Note: root auto-syncs the SET of child Applications, but each child app carries its
+# OWN syncPolicy. During adoption (plan Phase 5) child apps are created with NO
+# automated block, so their workloads only sync when told — root creating them does
+# not sync them. `prune` here only prunes child Application objects, never workloads.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: root
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: arr
+  source:
+    repoURL: git@github.com:Alpostros/homelab-gitops-arr.git
+    targetRevision: main
+    path: apps
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

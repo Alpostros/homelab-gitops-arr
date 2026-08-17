@@ -1,0 +1,36 @@
+# AppProject `arr` — the guardrail that keeps this cluster's ArgoCD in its own lane.
+# Apply once on the arr VM (Phase 2), before the root app:
+#   kubectl --context arr-lan apply -n argocd -f bootstrap/project.yaml
+#
+# Two restrictions matter here (see docs/arr-gitops-plan.md in homelab-docs):
+#   - destinations: pinned to THIS cluster only. The controller enforces it — an
+#     Application naming any other server is rejected. Combined with "no cluster
+#     Secret for any other cluster in this argocd ns", arr's ArgoCD physically
+#     cannot deploy to cerberus (and vice-versa).
+#   - sourceRepos: this repo only. Because arr and cerberus live in SEPARATE repos,
+#     this is a real restriction (sourceRepos matches repo URL only — it cannot be
+#     path-scoped, which is exactly why one shared repo was rejected).
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: arr
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  description: arr VM (VLAN 30) — media-acquisition tier, self-contained GitOps
+  sourceRepos:
+    - git@github.com:Alpostros/homelab-gitops-arr.git
+  destinations:
+    # server pin = the real boundary (in-cluster only). namespace '*' is fine for a
+    # single-tenant homelab cluster — the value is "can't reach another cluster".
+    - server: https://kubernetes.default.svc
+      namespace: '*'
+  # arr's charts include cluster-scoped objects (sealed-secrets CRD, the headlamp-ro
+  # ClusterRole/Binding), so both scopes are whitelisted within this one cluster.
+  clusterResourceWhitelist:
+    - group: '*'
+      kind: '*'
+  namespaceResourceWhitelist:
+    - group: '*'
+      kind: '*'
