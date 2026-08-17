@@ -1,0 +1,26 @@
+# arr-stack — the download stack (gluetun + 5 sidecars in one netns). MANUAL sync: the most
+# delicate app (VPN kill-switch + active downloads). Deployment + Service verified zero-diff
+# (kubectl -n arr diff → only the new SealedSecret changes), so adoption should NOT restart the
+# pod. Before syncing, annotate the existing Secret so the controller adopts it:
+#   kubectl --context arr-lan -n arr annotate secret arr-secrets sealedsecrets.bitnami.com/managed=true
+# After syncing, verify 6/6 Running AND gluetun's public IP is Mullvad (not the home ISP), then
+# flip to automated.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: arr-stack
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: arr
+  source:
+    repoURL: git@github.com:Alpostros/homelab-gitops-arr.git
+    targetRevision: main
+    path: helm/arr-stack
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: arr
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true

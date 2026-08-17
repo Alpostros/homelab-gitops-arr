@@ -1,0 +1,10 @@
+apiVersion: v2
+name: arr-stack
+description: >-
+  The arr download stack — ONE pod where gluetun (Mullvad WireGuard, kill-switch) owns the network
+  namespace and qBittorrent/Prowlarr/Radarr/Sonarr/FlareSolverr run as sidecars sharing it (there is
+  no per-container network opt-out — they MUST stay one pod). Reproduces the live Deployment/Service
+  field-for-field (incl. the restartedAt annotation) for a zero-diff adoption; the Mullvad key is a
+  SealedSecret. Config PVCs here; shared media PVCs come from the `storage` app.
+type: application
+version: 0.1.0

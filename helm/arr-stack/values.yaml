@@ -1,0 +1,14 @@
+# Image tags kept at their LIVE values for zero-diff adoption; pin in Phase 7 (arr-stack is the
+# lab's most exposed workload, so this is where pinning matters most).
+images:
+  gluetun: qmcgaw/gluetun:latest
+  qbittorrent: lscr.io/linuxserver/qbittorrent:latest
+  prowlarr: lscr.io/linuxserver/prowlarr:latest
+  radarr: lscr.io/linuxserver/radarr:latest
+  sonarr: lscr.io/linuxserver/sonarr:latest
+  flaresolverr: ghcr.io/flaresolverr/flaresolverr:latest
+
+# Mullvad WireGuard — non-secret params (the private key is the sealed arr-secrets Secret).
+vpn:
+  serverCountries: Sweden
+  wireguardAddresses: 10.67.106.55/32

@@ -1,0 +1,194 @@
+# ⚠️ ONE pod on purpose: gluetun owns the netns; the five *arr sidecars share it via the Mullvad
+# kill-switch (tun0 is the only route; tunnel down = fail closed). Do NOT split into separate pods.
+# restartedAt reproduced verbatim so adoption is zero-diff (no restart of the download stack).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: arr-stack
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: arr-stack
+  template:
+    metadata:
+      annotations:
+        kubectl.kubernetes.io/restartedAt: "2026-05-29T22:05:53Z"
+      labels:
+        app: arr-stack
+    spec:
+      containers:
+        # gluetun — owns the pod network namespace; all sidecar ports are published on THIS container
+        - name: gluetun
+          image: "{{ .Values.images.gluetun }}"
+          env:
+            - name: VPN_SERVICE_PROVIDER
+              value: mullvad
+            - name: VPN_TYPE
+              value: wireguard
+            - name: WIREGUARD_PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: arr-secrets
+                  key: wireguard-private-key
+            - name: SERVER_COUNTRIES
+              value: {{ .Values.vpn.serverCountries }}
+            - name: WIREGUARD_ADDRESSES
+              value: {{ .Values.vpn.wireguardAddresses }}
+          ports:
+            - containerPort: 8080
+            - containerPort: 9696
+            - containerPort: 7878
+            - containerPort: 8989
+            - containerPort: 8191
+            - containerPort: 8888
+          securityContext:
+            capabilities:
+              add:
+                - NET_ADMIN
+          volumeMounts:
+            - name: tun-device
+              mountPath: /dev/net/tun
+        - name: qbittorrent
+          image: "{{ .Values.images.qbittorrent }}"
+          env:
+            - name: PUID
+              value: "1000"
+            - name: PGID
+              value: "1000"
+            - name: TZ
+              value: Europe/Amsterdam
+            - name: WEBUI_PORT
+              value: "8080"
+          volumeMounts:
+            - name: qbittorrent-config
+              mountPath: /config
+            - name: nas-downloads
+              mountPath: /downloads
+        - name: prowlarr
+          image: "{{ .Values.images.prowlarr }}"
+          env:
+            - name: PUID
+              value: "1000"
+            - name: PGID
+              value: "1000"
+            - name: TZ
+              value: Europe/Amsterdam
+          volumeMounts:
+            - name: prowlarr-config
+              mountPath: /config
+        - name: radarr
+          image: "{{ .Values.images.radarr }}"
+          env:
+            - name: PUID
+              value: "1000"
+            - name: PGID
+              value: "1000"
+            - name: TZ
+              value: Europe/Amsterdam
+          volumeMounts:
+            - name: radarr-config
+              mountPath: /config
+            - name: nas-downloads
+              mountPath: /downloads
+            - name: plex-movies
+              mountPath: /movies
+        - name: sonarr
+          image: "{{ .Values.images.sonarr }}"
+          env:
+            - name: PUID
+              value: "1000"
+            - name: PGID
+              value: "1000"
+            - name: TZ
+              value: Europe/Amsterdam
+          volumeMounts:
+            - name: sonarr-config
+              mountPath: /config
+            - name: nas-downloads
+              mountPath: /downloads
+            - name: plex-tv
+              mountPath: /tv
+        - name: flaresolverr
+          image: "{{ .Values.images.flaresolverr }}"
+          env:
+            - name: LOG_LEVEL
+              value: info
+            - name: TZ
+              value: Europe/Amsterdam
+      volumes:
+        - name: tun-device
+          hostPath:
+            path: /dev/net/tun
+            type: CharDevice
+        - name: qbittorrent-config
+          persistentVolumeClaim:
+            claimName: pvc-qbittorrent-config
+        - name: prowlarr-config
+          persistentVolumeClaim:
+            claimName: pvc-prowlarr-config
+        - name: radarr-config
+          persistentVolumeClaim:
+            claimName: pvc-radarr-config
+        - name: sonarr-config
+          persistentVolumeClaim:
+            claimName: pvc-sonarr-config
+        - name: nas-downloads
+          persistentVolumeClaim:
+            claimName: pvc-nas-downloads     # from the `storage` app
+        - name: plex-movies
+          persistentVolumeClaim:
+            claimName: pvc-plex-movies        # from the `storage` app
+        - name: plex-tv
+          persistentVolumeClaim:
+            claimName: pvc-plex-tv            # from the `storage` app
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: arr-stack
+spec:
+  type: NodePort
+  selector:
+    app: arr-stack
+  ports:
+    - name: qbittorrent-webui
+      port: 8080
+      targetPort: 8080
+      nodePort: 8080
+    - name: prowlarr
+      port: 9696
+      targetPort: 9696
+      nodePort: 9696
+    - name: radarr
+      port: 7878
+      targetPort: 7878
+      nodePort: 7878
+    - name: sonarr
+      port: 8989
+      targetPort: 8989
+      nodePort: 8989
+    - name: flaresolverr
+      port: 8191
+      targetPort: 8191
+      nodePort: 8191
+    - name: gluetun-proxy
+      port: 8888
+      targetPort: 8888
+      nodePort: 8888
+---
+# arr-stack's per-app config PVCs (local-path, dynamic). Shared media PVCs are in the `storage` app.
+{{- range list "qbittorrent" "prowlarr" "radarr" "sonarr" }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-{{ . }}-config
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 1Gi
+---
+{{- end }}
