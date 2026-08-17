@@ -1,0 +1,6 @@
+# Image tags kept at their LIVE values so adoption is zero-diff (no pod churn).
+# Pin to digests in Phase 7 — a deliberate, controlled restart, not an adoption.
+images:
+  openWebui: ghcr.io/open-webui/open-webui:main
+  openrouterProxy: python:3.12-slim
+  searxng: searxng/searxng:latest

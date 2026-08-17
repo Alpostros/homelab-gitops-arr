@@ -1,0 +1,76 @@
+# searxng — running (un-parked 2026-08-17). Its settings secret_key is NOT in git: the ConfigMap
+# ships a `__SEARXNG_SECRET__` token, and an init container renders settings.yml into an emptyDir
+# with the real key injected from the sealed `searxng-secret` (repo rule: no secrets in git). This
+# render pattern is why adopting searxng RESTARTS its pod once (stateless — safe).
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: searxng
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: searxng
+  template:
+    metadata:
+      labels:
+        app: searxng
+    spec:
+      enableServiceLinks: false
+      initContainers:
+        - name: render-settings
+          image: "{{ .Values.images.searxng }}"
+          command: ["sh", "-c"]
+          args:
+            - sed "s|__SEARXNG_SECRET__|${SEARXNG_SECRET}|" /tmp/cm/settings.yml > /rendered/settings.yml
+          env:
+            - name: SEARXNG_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: searxng-secret
+                  key: secret-key
+          volumeMounts:
+            - name: settings-cm
+              mountPath: /tmp/cm
+            - name: rendered
+              mountPath: /rendered
+      containers:
+        - name: searxng
+          image: "{{ .Values.images.searxng }}"
+          env:
+            - name: TZ
+              value: Europe/Amsterdam
+            - name: SEARXNG_BASE_URL
+              value: http://searxng.ai.svc.cluster.local:8080/
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: rendered
+              mountPath: /etc/searxng/settings.yml
+              subPath: settings.yml
+      volumes:
+        - name: settings-cm
+          configMap:
+            name: searxng-settings
+        - name: rendered
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: searxng
+spec:
+  type: ClusterIP
+  selector:
+    app: searxng
+  ports:
+    - port: 8080
+      targetPort: 8080
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: searxng-settings
+data:
+  settings.yml: |
+{{ .Files.Get "files/searxng-settings.yml" | indent 4 }}

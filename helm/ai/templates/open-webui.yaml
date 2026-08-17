@@ -1,0 +1,65 @@
+# Open WebUI — the chat UI. NodePort 3000 (container 8080). Talks to the in-cluster
+# openrouter-free-proxy; TAVILY_API_KEY comes from the sealed `tavily` Secret. Data on a PVC.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: open-webui
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: open-webui
+  template:
+    metadata:
+      labels:
+        app: open-webui
+    spec:
+      containers:
+        - name: open-webui
+          image: "{{ .Values.images.openWebui }}"
+          env:
+            - name: TZ
+              value: Europe/Amsterdam
+            - name: OPENAI_API_BASE_URL
+              value: http://openrouter-free-proxy.ai.svc.cluster.local:8000/api/v1
+            - name: OPENAI_API_KEY
+              value: ignored
+            - name: ENABLE_WEB_SEARCH
+              value: "true"
+            - name: WEB_SEARCH_ENGINE
+              value: tavily
+            - name: WEB_SEARCH_RESULT_COUNT
+              value: "4"
+            - name: ENABLE_RAG_WEB_SEARCH
+              value: "true"
+            - name: RAG_WEB_SEARCH_ENGINE
+              value: tavily
+            - name: RAG_WEB_SEARCH_RESULT_COUNT
+              value: "4"
+            - name: TAVILY_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: tavily
+                  key: api-key
+          ports:
+            - containerPort: 8080
+          volumeMounts:
+            - name: data
+              mountPath: /app/backend/data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: pvc-openwebui-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: open-webui
+spec:
+  type: NodePort
+  selector:
+    app: open-webui
+  ports:
+    - port: 8080
+      targetPort: 8080
+      nodePort: 3000

@@ -1,0 +1,85 @@
+# openrouter-free-proxy — a stdlib-only OpenAI-compatible shim in front of OpenRouter that
+# injects the API key server-side (so it never reaches Open WebUI or git). Code lives in the
+# openrouter-free-proxy-code ConfigMap, mounted at /app/app.py. The pod-template annotation
+# `proxy-code-hash` is what triggers a rollout on code change — reproduced verbatim for zero-diff.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openrouter-free-proxy
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: openrouter-free-proxy
+  template:
+    metadata:
+      annotations:
+        proxy-code-hash: "24d35586da6d"
+      labels:
+        app: openrouter-free-proxy
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+      containers:
+        - name: proxy
+          image: "{{ .Values.images.openrouterProxy }}"
+          command: ["python", "/app/app.py"]
+          env:
+            - name: TZ
+              value: Europe/Amsterdam
+            - name: OPENROUTER_BASE
+              value: https://openrouter.ai/api/v1
+            - name: APP_TITLE
+              value: openwebui-openrouter-free
+            - name: APP_REFERER
+              value: https://github.com/
+            - name: MODELS_CACHE_TTL
+              value: "300"
+            - name: OPENROUTER_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: openrouter
+                  key: api-key
+          ports:
+            - containerPort: 8000
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          volumeMounts:
+            - name: code
+              mountPath: /app/app.py
+              subPath: app.py
+      volumes:
+        - name: code
+          configMap:
+            name: openrouter-free-proxy-code
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: openrouter-free-proxy
+spec:
+  type: ClusterIP
+  selector:
+    app: openrouter-free-proxy
+  ports:
+    - port: 8000
+      targetPort: 8000
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: openrouter-free-proxy-code
+data:
+  app.py: |
+{{ .Files.Get "files/app.py" | indent 4 }}

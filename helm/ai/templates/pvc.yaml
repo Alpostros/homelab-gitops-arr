@@ -1,0 +1,13 @@
+# Open WebUI's data PVC (local-path, 5Gi). Its DATA is not backed up (accepted gap) — only the
+# claim is declared here so a rebuilt cluster re-provisions it and Open WebUI can bind.
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc-openwebui-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 5Gi

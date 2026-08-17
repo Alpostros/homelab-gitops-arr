@@ -1,0 +1,39 @@
+use_default_settings: true
+server:
+  secret_key: "__SEARXNG_SECRET__"  # substituted at pod start by the init container from the sealed searxng-secret
+  limiter: false
+  image_proxy: true
+search:
+  safe_search: 0
+  autocomplete: ""
+  formats:
+    - html
+    - json
+ui:
+  static_use_hash: true
+# DuckDuckGo and Google block / mis-parse from datacenter & homelab IPs
+# (DDG returns CAPTCHA, Google throws parser errors). Brave/Startpage
+# rate-limit (HTTP 429) under load and self-suspend for ~180s, so we keep a
+# *wide* pool of engines: when one is throttled, the others still answer.
+engines:
+  - name: duckduckgo
+    disabled: true
+  - name: google
+    disabled: true
+  - name: brave
+    disabled: false
+  - name: startpage
+    disabled: false
+  - name: bing
+    disabled: false
+  - name: mojeek
+    disabled: false
+  - name: qwant
+    disabled: false
+  - name: wikipedia
+    disabled: false
+outgoing:
+  request_timeout: 6.0
+  max_request_timeout: 12.0
+  pool_connections: 100
+  pool_maxsize: 20

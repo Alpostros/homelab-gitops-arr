@@ -1,0 +1,10 @@
+apiVersion: v2
+name: ai
+description: >-
+  arr's parked "ai" side-project: Open WebUI (NodePort 3000) + a tiny stdlib openrouter-free-proxy
+  (ClusterIP) that injects the OpenRouter key server-side, plus searxng kept at replicas:0 ON
+  PURPOSE. Reproduces the live objects for zero-diff adoption; secrets (openrouter, tavily) are
+  SealedSecrets. searxng's settings secret_key is redacted to a placeholder (repo rule: no secrets
+  in git) — seal a real one before ever un-parking searxng.
+type: application
+version: 0.1.0

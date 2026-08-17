@@ -1,0 +1,24 @@
+# ai — Open WebUI + openrouter-free-proxy (adopt zero-diff, no restart) + searxng (restarts once
+# to inject its sealed secret_key). MANUAL SYNC: before syncing, the two EXISTING plaintext Secrets
+# must be annotated so the sealed-secrets controller may adopt them:
+#   kubectl --context arr-lan -n ai annotate secret openrouter tavily sealedsecrets.bitnami.com/managed=true
+# (searxng-secret is new — no annotation needed.) Flip to automated once Synced/Healthy.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: ai
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: arr
+  source:
+    repoURL: git@github.com:Alpostros/homelab-gitops-arr.git
+    targetRevision: main
+    path: helm/ai
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: ai
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
