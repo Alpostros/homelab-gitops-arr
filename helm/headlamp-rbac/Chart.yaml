@@ -1,0 +1,11 @@
+apiVersion: v2
+name: headlamp-rbac
+description: >-
+  Read-only RBAC that cerberus's Headlamp uses to view this (arr) cluster: a non-expiring
+  ServiceAccount (headlamp-ro) bound to the built-in `view` role plus a small cluster-scoped
+  supplement, with Secrets deliberately excluded (so the token cannot read the sealed-secrets
+  master key). Was applied out of band; this brings it under git. Mirror of homelab-docs
+  manifests/headlamp/ro-rbac.yaml (arr half). The unused cluster-admin `my-headlamp` /
+  `headlamp-admin` bindings are NOT here — they get removed in Phase 7.
+type: application
+version: 0.1.0

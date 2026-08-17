@@ -1,0 +1,36 @@
+# headlamp-rbac — read-only RBAC cerberus's Headlamp uses to view arr. Pure RBAC + a SA-token
+# Secret: NO workload, so adoption cannot restart anything. Verified zero-diff (kubectl SSA diff
+# exit 0), so this goes straight to automated. prune is safe — it only removes objects THIS app
+# manages; the unused cluster-admin `my-headlamp`/`headlamp-admin` bindings aren't tracked here
+# and are untouched until Phase 7 removes them explicitly.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: headlamp-rbac
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: arr
+  source:
+    repoURL: git@github.com:Alpostros/homelab-gitops-arr.git
+    targetRevision: main
+    path: helm/headlamp-rbac
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kube-system
+  # headlamp-ro-token's data (token/ca.crt/namespace) is populated by k8s, not stored in git —
+  # ignore it so the app doesn't perpetually show OutOfSync.
+  ignoreDifferences:
+    - group: ""
+      kind: Secret
+      name: headlamp-ro-token
+      namespace: kube-system
+      jsonPointers:
+        - /data
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
