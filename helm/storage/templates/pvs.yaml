@@ -39,3 +39,16 @@ spec:
   hostPath:
     path: /mnt/nas/tv
   persistentVolumeReclaimPolicy: Retain
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-plex-anime
+spec:
+  accessModes:
+    - ReadWriteMany
+  capacity:
+    storage: 10Ti
+  hostPath:
+    path: /mnt/nas/anime
+  persistentVolumeReclaimPolicy: Retain

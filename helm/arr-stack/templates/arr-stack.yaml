@@ -109,6 +109,8 @@ spec:
               mountPath: /downloads
             - name: plex-tv
               mountPath: /tv
+            - name: plex-anime
+              mountPath: /anime
         - name: flaresolverr
           image: "{{ .Values.images.flaresolverr }}"
           env:
@@ -142,6 +144,9 @@ spec:
         - name: plex-tv
           persistentVolumeClaim:
             claimName: pvc-plex-tv            # from the `storage` app
+        - name: plex-anime
+          persistentVolumeClaim:
+            claimName: pvc-plex-anime         # from the `storage` app
 ---
 apiVersion: v1
 kind: Service
