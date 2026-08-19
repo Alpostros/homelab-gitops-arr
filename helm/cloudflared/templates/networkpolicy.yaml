@@ -1,0 +1,68 @@
+# The reason cloudflared is its own pod rather than a sidecar in seerr's.
+#
+# NetworkPolicy selects PODS, not containers — inside seerr's pod the connector would inherit
+# seerr's whole egress surface (TMDB, plex.tv, Radarr/Sonarr, the LAN) and there would be no way
+# to narrow it without breaking seerr. Here its egress is pinned to exactly three destinations.
+#
+# EGRESS ONLY, deliberately: this is the arr cluster's FIRST NetworkPolicy, and adding an ingress
+# rule risks blocking kubelet's liveness/readiness probes (they originate from the node, not a
+# pod). Nothing in the cluster needs to dial cloudflared anyway, and the connector is not exposed
+# by any Service, so the ingress side carries little risk to close later.
+#
+# ✅ ENFORCEMENT VERIFIED 2026-08-19, behaviourally: a throwaway pod reached seerr's ClusterIP, then
+# lost it the moment a deny-all-egress policy selected it. So this file bites — it is not decorative.
+# NOTE for whoever re-checks: k3s runs the kube-router netpol controller INSIDE the k3s process, so
+# there is no kube-router pod; `get pods | grep kube-router` is empty either way and proves nothing.
+# Re-verify behaviourally (the probe is in Phase 0 of docs/seerr-cloudflared.md), not by listing pods.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: cloudflared
+spec:
+  podSelector:
+    matchLabels:
+      app: cloudflared
+  policyTypes:
+    - Egress
+  egress:
+    # 1. Cluster DNS — needed to resolve both seerr and Cloudflare's regional edge endpoints.
+    - to:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+          podSelector:
+            matchLabels:
+              k8s-app: kube-dns
+      ports:
+        - protocol: UDP
+          port: 53
+        - protocol: TCP
+          port: 53
+
+    # 2. The one origin this tunnel exists to serve. Not the Service IP — podSelector, so it
+    #    stays correct if the NodePort or ClusterIP ever changes.
+    - to:
+        - podSelector:
+            matchLabels:
+              app: seerr
+      ports:
+        - protocol: TCP
+          port: 5055
+
+    # 3. Cloudflare's edge: outbound QUIC/7844 (HTTP/2 and 443 as documented fallbacks).
+    #    RFC1918 is excluded, so a compromised connector cannot reach the LAN, the NAS, the
+    #    k3s API, or anything else on VLAN 30 — only the public internet on these ports.
+    - to:
+        - ipBlock:
+            cidr: 0.0.0.0/0
+            except:
+              - 10.0.0.0/8
+              - 172.16.0.0/12
+              - 192.168.0.0/16
+      ports:
+        - protocol: UDP
+          port: 7844
+        - protocol: TCP
+          port: 7844
+        - protocol: TCP
+          port: 443

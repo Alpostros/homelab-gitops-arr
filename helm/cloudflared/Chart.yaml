@@ -1,0 +1,9 @@
+apiVersion: v2
+name: cloudflared
+description: >-
+  Cloudflare Tunnel connector for the arr cluster — carries the PUBLIC seer.fuzzyy.dev path
+  (internet → Cloudflare edge → outbound tunnel → seerr:5055), replacing the oracle-gateway +
+  tailnet hop. Locally-managed tunnel: the hostname→service ingress map lives in this chart, so
+  adding a hostname needs a commit and ArgoCD selfHeal reverts any dashboard edit.
+type: application
+version: 0.1.0

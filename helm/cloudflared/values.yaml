@@ -1,0 +1,30 @@
+# cloudflared/latest is fine to start; PIN to the running version once deployed (SECURITY.md
+# IMAGE-PINNING) — this is an internet-facing connector, so an unreviewed image bump is a
+# supply-chain change to the public path. Check the live tag with:
+#   kubectl --context arr-tailscale -n arr get deploy cloudflared -o jsonpath='{..image}'
+image: cloudflare/cloudflared:latest
+
+tunnel:
+  # UUID printed by `cloudflared tunnel create homelab-arr` (Phase 1). NOT a secret — the
+  # credentials.json that authenticates as this tunnel is the secret, and it is sealed.
+  id: "24fac793-c6d9-48ba-9846-b90203304b97"
+
+  # The ingress map. Order matters; the catch-all 404 MUST stay last.
+  #
+  # ⚠️ ONE hostname only. Never add plex.fuzzyy.dev or any other video path — a tunnel
+  # hostname is always proxied, which is exactly why Plex is DNS-only today. This list being
+  # in git under selfHeal is the control that enforces it; keep it that way.
+  #
+  # Phase 2 tests on seer-test.fuzzyy.dev; Phase 3 cuts over by changing this to seer.fuzzyy.dev.
+  ingress:
+    - hostname: seer-test.fuzzyy.dev
+      service: http://seerr.arr.svc.cluster.local:5055
+
+resources:
+  requests:
+    cpu: 10m
+    memory: 32Mi
+  limits:
+    # Bounded so a tunnel problem cannot starve arr-stack on this 6 GB node.
+    cpu: 500m
+    memory: 128Mi

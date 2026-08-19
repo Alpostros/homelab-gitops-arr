@@ -1,0 +1,40 @@
+# cloudflared — Cloudflare Tunnel connector for the PUBLIC Seerr path (SEERR-CLOUDFLARED).
+# Replaces `internet → Cloudflare → oracle-gateway → tailnet → :5055` with an OUTBOUND-only
+# connector, so Seerr's public path contains no Tailscale and no gateway hop.
+#
+# Runs as its OWN Deployment, deliberately NOT as a sidecar in the seerr pod:
+#   - NetworkPolicy is per-POD, not per-container. In seerr's pod the connector would inherit
+#     seerr's full egress (TMDB, plex.tv, the arr services) with no way to narrow it. Separate
+#     pod = its egress can be pinned to {DNS, seerr:5055, Cloudflare edge}. See networkpolicy.yaml.
+#   - The tunnel credential would otherwise sit inside the internet-facing app's own pod, so a
+#     Seerr pre-auth RCE (the threat GATEWAY-AUTH tracks) would hand it over from the shared mount.
+#   - seerr is replicas:1 on an RWO PVC and runs a manually-bumped :latest image; sharing a pod
+#     means every seerr update drops the tunnel and every tunnel update blips the public site.
+#
+# ⚠️ The tunnel routes ONE hostname and must keep routing exactly one. NEVER add plex.fuzzyy.dev:
+# a tunnel hostname is ALWAYS Cloudflare-proxied, which is the CDN-terms problem that made Plex
+# DNS-only. The ingress map lives in git precisely so selfHeal reverts a dashboard edit.
+#
+# MANUAL SYNC for the first deploy: helm/cloudflared/templates/sealedsecret.yaml is comments-only
+# until the user seals real tunnel credentials into it (command is in that file). Flip to
+# automated (prune + selfHeal) once the connector is Synced/Healthy — selfHeal is what enforces
+# the paragraph above, so do not leave this on manual.
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: cloudflared
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: arr
+  source:
+    repoURL: git@github.com:Alpostros/homelab-gitops-arr.git
+    targetRevision: main
+    path: helm/cloudflared
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: arr
+  syncPolicy:
+    syncOptions:
+      - CreateNamespace=true
