@@ -15,9 +15,10 @@ tunnel:
   # hostname is always proxied, which is exactly why Plex is DNS-only today. This list being
   # in git under selfHeal is the control that enforces it; keep it that way.
   #
-  # Phase 2 tests on seer-test.fuzzyy.dev; Phase 3 cuts over by changing this to seer.fuzzyy.dev.
+  # Phase 3 cutover applied 2026-08-19: seer-test.fuzzyy.dev proved the path end-to-end
+  # (307 -> /login, 200, x-powered-by: Express via cf-ray AMS), so the live hostname moved here.
   ingress:
-    - hostname: seer-test.fuzzyy.dev
+    - hostname: seer.fuzzyy.dev
       service: http://seerr.arr.svc.cluster.local:5055
 
 resources:

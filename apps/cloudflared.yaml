@@ -15,10 +15,10 @@
 # a tunnel hostname is ALWAYS Cloudflare-proxied, which is the CDN-terms problem that made Plex
 # DNS-only. The ingress map lives in git precisely so selfHeal reverts a dashboard edit.
 #
-# MANUAL SYNC for the first deploy: helm/cloudflared/templates/sealedsecret.yaml is comments-only
-# until the user seals real tunnel credentials into it (command is in that file). Flip to
-# automated (prune + selfHeal) once the connector is Synced/Healthy — selfHeal is what enforces
-# the paragraph above, so do not leave this on manual.
+# Automated (prune + selfHeal) since 2026-08-19, after the first deploy came up Synced/Healthy and
+# the tunnel was verified end-to-end. selfHeal is what enforces the one-hostname rule above: a
+# hostname added in Cloudflare's dashboard has no effect (the ingress map is here, not there), and
+# an edit to these manifests outside git gets reverted.
 apiVersion: argoproj.io/v1alpha1
 kind: Application
 metadata:
@@ -36,5 +36,8 @@ spec:
     server: https://kubernetes.default.svc
     namespace: arr
   syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
     syncOptions:
       - CreateNamespace=true
