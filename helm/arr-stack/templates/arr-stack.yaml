@@ -1,19 +1,22 @@
 # ⚠️ ONE pod on purpose: gluetun owns the netns; the five *arr sidecars share it via the Mullvad
 # kill-switch (tun0 is the only route; tunnel down = fail closed). Do NOT split into separate pods.
-# restartedAt reproduced verbatim so adoption is zero-diff (no restart of the download stack).
+# No restartedAt annotation in the template: pinning it made ArgoCD selfHeal revert every
+# `kubectl rollout restart` within a second, leaving an orphan pod running alongside the live one.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: arr-stack
 spec:
   replicas: 1
+  # Recreate, never RollingUpdate: two arr-stack pods at once means two gluetuns on the same Mullvad
+  # key and two qBittorrent/Radarr/Sonarr instances on the same RWO config volumes.
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: arr-stack
   template:
     metadata:
-      annotations:
-        kubectl.kubernetes.io/restartedAt: "2026-05-29T22:05:53Z"
       labels:
         app: arr-stack
     spec:
@@ -60,6 +63,22 @@ spec:
               value: Europe/Amsterdam
             - name: WEBUI_PORT
               value: "8080"
+          # Self-heal: when gluetun rebuilds tun0, qBittorrent usually re-listens on the new interface
+          # but can miss the last rebuild of a reconnect burst — it then listens only on lo/eth0, the
+          # kill-switch drops everything, and downloads stall silently until a restart (2026-09-11 →
+          # 09-17). Fail when nothing listens on the tunnel address, so the kubelet restarts this
+          # container only; gluetun and the tunnel are untouched. Port-agnostic on purpose: the
+          # listen port lives in qBittorrent's config, not here.
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - 'netstat -tln | grep -qF " {{ (split "/" .Values.vpn.wireguardAddresses)._0 }}:"'
+            initialDelaySeconds: 120
+            periodSeconds: 60
+            timeoutSeconds: 10
+            failureThreshold: 5
           volumeMounts:
             - name: qbittorrent-config
               mountPath: /config
